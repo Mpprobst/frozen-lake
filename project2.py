@@ -5,6 +5,7 @@ Author: Michael Probst
 
 import gym
 import argparse
+import numpy as np
 from RandomAgent import RandomAgent
 from DynaQ import DynaQAgent
 from QLearning import QLearningAgent
@@ -32,7 +33,8 @@ size is the size of the lake.
 def FrozenLake(agent, size, numEps):
     agentFunc = AGENTS_MAP[agent]
     env = gym.make(f'FrozenLake{LAKE_SIZES[size]}-v0')
-    agent = agentFunc()
+    agent = agentFunc(env)
+
     if args.verbose:
         #Print out the number of actions and states in the environment (disable for cartpole)
         print(env.action_space.n)
@@ -44,17 +46,22 @@ def FrozenLake(agent, size, numEps):
 
         done = False
         stepCount = 0
-
+        if i % 100 == 0:
+            print(f'EPISODE {i}')
         if args.verbose:
             print(f'==========\nEPISODE {i}\n==========')
         #Loop until either the agent finishes or takes 200 actions, whichever comes first.
         while stepCount < 200 and done == False:
             stepCount += 1
 
-            actionToTake = agent.SuggestMove(env)
+            actionToTake = agent.SuggestMove(env, currentState)
 
             #Execute actions using the step function. Returns the nextState, reward, a boolean indicating whether this is a terminal state. The final thing it returns is a probability associated with the underlying transition distribution, but we shouldn't need that for this assignment.
             nextState, reward, done, _ = env.step(actionToTake)
+            if reward == 1:
+                print("win!")
+
+            agent.UpdateModels(currentState, nextState, actionToTake, reward)
 
             if args.verbose:
                 print(f'Action Taken: {ACTION_NAMES[actionToTake]}')
@@ -62,6 +69,8 @@ def FrozenLake(agent, size, numEps):
                 env.render()
 
             currentState = nextState
+        #endwhile
+        
 
     env.close()
 
