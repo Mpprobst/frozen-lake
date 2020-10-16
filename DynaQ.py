@@ -7,9 +7,12 @@ Purpose: Implements the DynaQ model-based RL technique to solve the frozen lake 
 
 """
 QUESTIONS
-Is my goal to train the model, then run some tests?
-Where do I get the mean reward
+Is my goal to train the model, then run some tests? - yes
+Where do I get the mean reward?
+    - train for some episodes, test. Train a little more, test. When testing, get the average reward.
+Should I stop training when sufficiently well trained?
 """
+
 import numpy as np
 import random
 
@@ -44,17 +47,15 @@ class DynaQAgent:
         self.successCount = 0
 
     def GetBestAction(self, state):
-        actions = np.amax(self.transitionModel[state], axis=1)
+        actions = self.rewardModel[state]
         bestAction = np.argmax(actions)
-        bestReward = self.transitionModel[state][bestAction][0]
-
+        bestReward = self.rewardModel[state][bestAction]
         "need to see if other actions have the same reward"
-        if np.array(actions==bestReward).sum() > 1:
-            options = []
-            for i in range(len(actions)):
-                if actions[i] == bestReward:
-                    options.append(i)
-            bestAction = random.choice(options)
+        options = []
+        for i in range(len(actions)):
+            if actions[i] == bestReward:
+                options.append(i)
+        bestAction = random.choice(options)
         return bestAction
 
     def EpsilonGreedy(self, env, state):
@@ -79,15 +80,34 @@ class DynaQAgent:
 
         self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (reward + GAMMA * self.rewardModel[nextState][nextBestAction] - self.rewardModel[state][action])
         #print(f'{self.rewardModel[state][action]}+{LEARNING_RATE}*({reward}+{GAMMA}*{self.rewardModel[nextState][bestAction]}-{self.rewardModel[state][action]}={self.rewardModel[state][action]})')
+        # update transition model with MLE
+        successfulActionCount = 0
+        actionTakenCount = 0
+        for h in self.history:
+            if h[0] == state and h[1] == action:
+                actionTakenCount += 1
+                if h[2] == nextState:
+                    successfulActionCount += 1
 
-        self.transitionModel[state][action][nextState] = reward
+        self.transitionModel[state][action][nextState] = successfulActionCount / actionTakenCount
 
         # q planning
         "for n times"
-        for n in range(100):
+        for n in range(50):
             state, action, nextState = random.choice(self.history)
             bestAction = self.GetBestAction(nextState)
-            "randomAction = random action taken previously from randomState"
+            sum_x = sum(self.transitionModel[state][action])
+            randVal = random.uniform(0,sum_x)
+
+            for s in range(len(self.transitionModel[state][action])):
+                if self.transitionModel[state][action][s] < randVal:
+                    nextState = s
+                    break
+                else:
+                    randVal -= self.transitionModel[state][action][s]
+            #print(nextState)
+            #nextState = np.argmax(self.transitionModel[state][action])  # TODO: randomly select the nextState based on the probabilities.
             reward = self.transitionModel[state][action][nextState]
+
             # q update equation
             self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (reward + GAMMA * self.rewardModel[nextState][bestAction] - self.rewardModel[state][action])
