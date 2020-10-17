@@ -26,9 +26,9 @@ LAKE_SIZES = {'4x4' : '',
 
 ACTION_NAMES = [ 'LEFT', 'DOWN', 'RIGHT', 'UP' ]
 
-TEST_INDEX = 500
+TEST_INDEX = 1000
 
-NUM_TESTS = 10
+NUM_TESTS = 50
 
 def Run(agent, env, isTest):
     #Reset will reset the environment to its initial configuration and return that state.
@@ -43,7 +43,7 @@ def Run(agent, env, isTest):
         actionToTake = 0
         if isTest:
             actionToTake = agent.GetBestAction(currentState)
-            env.render()
+            #env.render()
         else:
             actionToTake = agent.SuggestMove(env, currentState)
 
@@ -82,23 +82,25 @@ def FrozenLake(agent, size, numEps):
         for i in range(numEps):
 
             if i % TEST_INDEX == 0:     # TESTING
-                print(f'TEST {i / TEST_INDEX}')
+                #print(f'TEST {i / TEST_INDEX}')
                 meanReward = 0
                 #for row in agent.rewardModel:
                 #    print(row)
                 #env.render()
 
                 for t in range(NUM_TESTS):
-                    print(f'-----{t}-----\n')
+                    #print(f'-----{t}-----\n')
                     value = Run(agent, env, True)
+                    """
                     if value == 1:
                         print("WIN")
                     #    env.render()
                     else:
                         print("lose")
+                    """
                     meanReward += value
                 meanReward /= NUM_TESTS
-                print(meanReward)
+                print(f'TEST {i / TEST_INDEX}: Avg Reward = {meanReward}')
                 writer.writerow([i / TEST_INDEX, meanReward])
 
             else:       # TRAINING

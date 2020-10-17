@@ -16,8 +16,8 @@ Should I stop training when sufficiently well trained?
 import numpy as np
 import random
 
-LEARNING_RATE = 0.5
-GAMMA = 0.1
+LEARNING_RATE = 0.9
+GAMMA = 0.9
 
 "uses q-planning and q-learing"
 class DynaQAgent:
@@ -59,7 +59,7 @@ class DynaQAgent:
         return bestAction
 
     def EpsilonGreedy(self, env, state):
-        epsilon = 1 / np.exp(0.1 * self.successCount)     # approximately 0 around n = 50
+        epsilon = (0.5 / np.exp(0.01 * self.successCount))      # approximately .1 around successCount = 25,000 and e < 0.2 around 6000 This is because I am running 50,000 episodes and the model should be be able to have won half of the time by the end of training
         # explore
         if random.random() < epsilon:
             return env.action_space.sample()
@@ -74,7 +74,8 @@ class DynaQAgent:
     def UpdateModels(self, state, nextState, action, reward):
         if reward == 1:
             self.successCount += 1
-        self.history.append((state, action, nextState))
+        if (state,action,nextState) not in self.history:
+            self.history.append((state, action, nextState))
         # q update equation
         nextBestAction = self.GetBestAction(nextState)
 
@@ -93,12 +94,13 @@ class DynaQAgent:
 
         # q planning
         "for n times"
-        for n in range(50):
+        for n in range(5):
             state, action, nextState = random.choice(self.history)
             bestAction = self.GetBestAction(nextState)
             sum_x = sum(self.transitionModel[state][action])
             randVal = random.uniform(0,sum_x)
 
+            # select nextState based on transition model probabilities
             for s in range(len(self.transitionModel[state][action])):
                 if self.transitionModel[state][action][s] < randVal:
                     nextState = s
