@@ -3,16 +3,6 @@ DynaQ.py
 Author: Michael Probst
 Purpose: Implements the DynaQ model-based RL technique to solve the frozen lake problem
 """
-
-
-"""
-QUESTIONS
-Is my goal to train the model, then run some tests? - yes
-Where do I get the mean reward?
-    - train for some episodes, test. Train a little more, test. When testing, get the average reward.
-Should I stop training when sufficiently well trained?
-"""
-
 import numpy as np
 import random
 
@@ -74,8 +64,8 @@ class DynaQAgent:
     def UpdateModels(self, state, nextState, action, reward):
         if reward == 1:
             self.successCount += 1
-        if (state,action,nextState) not in self.history:
-            self.history.append((state, action, nextState))
+        #if (state,action,nextState) not in self.history:
+        self.history.append((state, action, nextState))
         # q update equation
         nextBestAction = self.GetBestAction(nextState)
 
@@ -96,7 +86,6 @@ class DynaQAgent:
         "for n times"
         for n in range(5):
             state, action, nextState = random.choice(self.history)
-            bestAction = self.GetBestAction(nextState)
             sum_x = sum(self.transitionModel[state][action])
             randVal = random.uniform(0,sum_x)
 
@@ -110,6 +99,7 @@ class DynaQAgent:
             #print(nextState)
             #nextState = np.argmax(self.transitionModel[state][action])  # TODO: randomly select the nextState based on the probabilities.
             reward = self.transitionModel[state][action][nextState]
+            nextBestAction = self.GetBestAction(nextState)
 
             # q update equation
-            self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (reward + GAMMA * self.rewardModel[nextState][bestAction] - self.rewardModel[state][action])
+            self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (reward + GAMMA * self.rewardModel[nextState][nextBestAction] - self.rewardModel[state][action])
