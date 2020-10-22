@@ -7,9 +7,8 @@ Reference: https://medium.com/emergent-future/simple-reinforcement-learning-with
 import gym
 import numpy as np
 import random
-import torch as T
-import torch.nn.functional as F
-import torch.optim as optim
+import tensorflow.compat.v1 as tf
+#from tensorflow.python.framework import ops
 
 GAMMA = 0.9
 LEARNING_RATE = 0.1
