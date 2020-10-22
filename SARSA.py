@@ -9,6 +9,8 @@ import random
 LEARNING_RATE = 0.9
 GAMMA = 0.9
 
+TERMINAL_STATES = [5, 7, 11, 12, 15]
+
 class SARSAAgent:
     def __init__(self, env):
         "The reward model contains the reward for every state"
@@ -53,5 +55,8 @@ class SARSAAgent:
         if self.previousObservation != None:
             # q update equation
             s, a = self.previousObservation
-            self.rewardModel[s][a] = self.rewardModel[s][a] + LEARNING_RATE * (reward + GAMMA * self.rewardModel[state][action] - self.rewardModel[s][a])
+            target = reward + GAMMA * self.rewardModel[state][action]
+            if state in TERMINAL_STATES:
+                target = reward
+            self.rewardModel[s][a] = self.rewardModel[s][a] + LEARNING_RATE * (target - self.rewardModel[s][a])
         self.previousObservation = (state, action)

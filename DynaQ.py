@@ -6,15 +6,20 @@ Purpose: Implements the DynaQ model-based RL technique to solve the frozen lake 
 import numpy as np
 import random
 
-LEARNING_RATE = 0.9
+LEARNING_RATE = 0.1
 GAMMA = 0.9
+
+TERMINAL_STATES = [5, 7, 11, 12, 15]
 
 "uses q-planning and q-learing"
 class DynaQAgent:
     def __init__(self, env):
         "The transition model is initialized with every possible state and every"
         "possible move from that state with the state that results in that action"
-        self.transitionModel = []      # [S, A] = S', R
+        n_states = env.observation_space.n
+        n_actions = env.action_space.n
+        self.transitionModel = []     # [S, A, S'] = p
+
         for s in range(env.observation_space.n):
             col = []
             for a in range(env.action_space.n):
@@ -24,8 +29,9 @@ class DynaQAgent:
                 col.append(row)
             self.transitionModel.append(col)
 
+
         "The reward model contains the reward for every state"
-        self.rewardModel = []           # [S, A] = R
+        self.rewardModel = []          # [S, A] = R
         for s in range(env.observation_space.n):
             row = []
             for a in range(env.action_space.n):
@@ -40,7 +46,7 @@ class DynaQAgent:
         actions = self.rewardModel[state]
         bestAction = np.argmax(actions)
         bestReward = self.rewardModel[state][bestAction]
-        "need to see if other actions have the same reward"
+        "need to see if other actions have the same reward and pick one randomly if so"
         options = []
         for i in range(len(actions)):
             if actions[i] == bestReward:
@@ -68,8 +74,10 @@ class DynaQAgent:
         self.history.append((state, action, nextState))
         # q update equation
         nextBestAction = self.GetBestAction(nextState)
-
-        self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (reward + GAMMA * self.rewardModel[nextState][nextBestAction] - self.rewardModel[state][action])
+        target = reward + GAMMA * self.rewardModel[nextState][nextBestAction]
+        if state in TERMINAL_STATES:
+            target = reward
+        self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (target - self.rewardModel[state][action])
         #print(f'{self.rewardModel[state][action]}+{LEARNING_RATE}*({reward}+{GAMMA}*{self.rewardModel[nextState][bestAction]}-{self.rewardModel[state][action]}={self.rewardModel[state][action]})')
         # update transition model with MLE
         successfulActionCount = 0
@@ -96,10 +104,13 @@ class DynaQAgent:
                     break
                 else:
                     randVal -= self.transitionModel[state][action][s]
-            #print(nextState)
-            #nextState = np.argmax(self.transitionModel[state][action])  # TODO: randomly select the nextState based on the probabilities.
+
             reward = self.transitionModel[state][action][nextState]
             nextBestAction = self.GetBestAction(nextState)
 
             # q update equation
-            self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (reward + GAMMA * self.rewardModel[nextState][nextBestAction] - self.rewardModel[state][action])
+            "if in terminal then gamma*... = reward at next state"
+            target = reward + GAMMA * self.rewardModel[nextState][nextBestAction]
+            if state in TERMINAL_STATES:
+                target = reward
+            self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (target - self.rewardModel[state][action])

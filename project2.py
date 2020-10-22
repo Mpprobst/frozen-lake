@@ -12,6 +12,7 @@ from DynaQ import DynaQAgent
 from QLearning import QLearningAgent
 from SARSA import SARSAAgent
 from NeuralNet import NeuralNetAgent
+import tensorflow.compat.v1 as tf
 
 AGENTS_MAP = {'random' : RandomAgent,
                'dynaQ' : DynaQAgent,
@@ -67,11 +68,14 @@ Main loop for solving the frozen lake problem.
 agent is the agent that is currently solving the problem.
 size is the size of the lake.
 """
-def FrozenLake(agent, size, numEps):
+def FrozenLake(agent, size, numEps, sess=None):
     filename = f'results/{agent}_{size}.csv'
     agentFunc = AGENTS_MAP[agent]
     env = gym.make(f'FrozenLake{LAKE_SIZES[size]}-v0')
     agent = agentFunc(env)
+    if sess != None:
+        agent.sess = sess
+
     with open(filename, 'w', newline = '') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
         if args.verbose:
@@ -121,4 +125,10 @@ parser.add_argument('--numEpisodes', type=int, default = 10, help='Number of epi
 parser.add_argument('--verbose', help='Print more information.', action='store_true')
 args = parser.parse_args()
 
-FrozenLake(args.agent, args.size, args.numEpisodes)
+if args.agent == 'NN':
+    with tf.Session() as sess:
+        init = tf.global_variables_initializer()
+        sess.run(init)
+        FrozenLake(args.agent, args.size, args.numEpisodes, sess)
+else:
+    FrozenLake(args.agent, args.size, args.numEpisodes)
