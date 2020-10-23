@@ -12,7 +12,7 @@ from DynaQ import DynaQAgent
 from QLearning import QLearningAgent
 from SARSA import SARSAAgent
 from NeuralNet import NeuralNetAgent
-import tensorflow.compat.v1 as tf
+import time
 
 AGENTS_MAP = {'random' : RandomAgent,
                'dynaQ' : DynaQAgent,
@@ -26,6 +26,9 @@ LAKE_SIZES = {'4x4' : '',
               '8X8' : '8x8' }
 
 ACTION_NAMES = [ 'LEFT', 'DOWN', 'RIGHT', 'UP' ]
+
+TERMINAL_STATES_4 = [5, 7, 11, 12, 15]
+TERMINAL_STATES_8 = [19, 29, 35, 41, 42, 46, 49, 52, 54, 59, 63]
 
 TEST_INDEX = 1000
 
@@ -50,7 +53,6 @@ def Run(agent, env, isTest):
 
         #Execute actions using the step function. Returns the nextState, reward, a boolean indicating whether this is a terminal state. The final thing it returns is a probability associated with the underlying transition distribution, but we shouldn't need that for this assignment.
         nextState, reward, done, _ = env.step(actionToTake)
-
         if not isTest:
             agent.UpdateModels(currentState, nextState, actionToTake, reward)
 
@@ -58,6 +60,7 @@ def Run(agent, env, isTest):
             print(f'Action Taken: {ACTION_NAMES[actionToTake]}')
             #Render visualizes the environment
             env.render()
+
 
         currentState = nextState
     return reward
@@ -72,7 +75,12 @@ def FrozenLake(agent, size, numEps, sess=None):
     filename = f'results/{agent}_{size}.csv'
     agentFunc = AGENTS_MAP[agent]
     env = gym.make(f'FrozenLake{LAKE_SIZES[size]}-v0')
-    agent = agentFunc(env)
+
+    terminalStates = TERMINAL_STATES_4
+    if '8x8' == LAKE_SIZES[size]:
+        terminalStates = TERMINAL_STATES_8
+
+    agent = agentFunc(env, terminalStates)
     if sess != None:
         agent.sess = sess
 
@@ -82,7 +90,7 @@ def FrozenLake(agent, size, numEps, sess=None):
             #Print out the number of actions and states in the environment (disable for cartpole)
             print(env.action_space.n)
             print(env.observation_space.n)
-
+        testTime = time.time()
         for i in range(numEps):
 
             if i % TEST_INDEX == 0:     # TESTING
@@ -95,16 +103,17 @@ def FrozenLake(agent, size, numEps, sess=None):
                 for t in range(NUM_TESTS):
                     #print(f'-----{t}-----\n')
                     value = Run(agent, env, True)
-                    """
-                    if value == 1:
-                        print("WIN")
-                    #    env.render()
-                    else:
-                        print("lose")
-                    """
                     meanReward += value
                 meanReward /= NUM_TESTS
-                print(f'TEST {i / TEST_INDEX}: Avg Reward = {meanReward}')
+                print(f'TEST {i / TEST_INDEX}:\t Avg Reward = {meanReward} successCount = {agent.successCount} train time = {time.time() - testTime}')
+                testTime = time.time()
+                row = []
+                for i in range(len(agent.rewardModel)):
+                    row.append(round(float(np.amax(agent.rewardModel[i])),2))
+                    row.append(ACTION_NAMES[np.argmax(agent.rewardModel[i])])
+                    if (i+1) % 4 == 0:
+                        print(row)
+                        row = []
                 writer.writerow([i / TEST_INDEX, meanReward])
 
             else:       # TRAINING
@@ -125,10 +134,4 @@ parser.add_argument('--numEpisodes', type=int, default = 10, help='Number of epi
 parser.add_argument('--verbose', help='Print more information.', action='store_true')
 args = parser.parse_args()
 
-if args.agent == 'NN':
-    with tf.Session() as sess:
-        init = tf.global_variables_initializer()
-        sess.run(init)
-        FrozenLake(args.agent, args.size, args.numEpisodes, sess)
-else:
-    FrozenLake(args.agent, args.size, args.numEpisodes)
+FrozenLake(args.agent, args.size, args.numEpisodes)

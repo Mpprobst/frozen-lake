@@ -9,8 +9,15 @@ import random
 LEARNING_RATE = 0.5
 GAMMA = 0.9
 
+"""
+['LEFT', 'UP', 'DOWN', 'UP']
+['LEFT', 'LEFT', 'LEFT', 'LEFT']
+['UP', 'DOWN', 'LEFT', 'LEFT']
+['LEFT', 'RIGHT', 'UP', 'LEFT']
+"""
+
 class QLearningAgent:
-    def __init__(self, env):
+    def __init__(self, env, terminalStates=[]):
         "The reward model contains the reward for every state"
         self.rewardModel = []           # [S, A] = R
         for s in range(env.observation_space.n):

@@ -6,13 +6,12 @@ Purpose: Implements the SARSA model-free RL technique to solve the frozen lake p
 import numpy as np
 import random
 
-LEARNING_RATE = 0.9
+LEARNING_RATE = 0.1
 GAMMA = 0.9
 
-TERMINAL_STATES = [5, 7, 11, 12, 15]
-
 class SARSAAgent:
-    def __init__(self, env):
+    def __init__(self, env, terminalStates):
+        self.terminalStates = terminalStates
         "The reward model contains the reward for every state"
         self.rewardModel = []           # [S, A] = R
         for s in range(env.observation_space.n):
@@ -37,7 +36,7 @@ class SARSAAgent:
         return bestAction
 
     def EpsilonGreedy(self, env, state):
-        epsilon = (1 / np.exp(0.1 * self.successCount))      # approximately 0 around successCount = 600 and e < 0.1 around 50
+        epsilon = (1 / np.exp(0.01 * self.successCount))      # approximately 0 around successCount = 600 and e < 0.1 around 50
         # explore
         if random.random() < epsilon:
             return env.action_space.sample()
@@ -56,7 +55,7 @@ class SARSAAgent:
             # q update equation
             s, a = self.previousObservation
             target = reward + GAMMA * self.rewardModel[state][action]
-            if state in TERMINAL_STATES:
+            if nextState in self.terminalStates:
                 target = reward
             self.rewardModel[s][a] = self.rewardModel[s][a] + LEARNING_RATE * (target - self.rewardModel[s][a])
         self.previousObservation = (state, action)

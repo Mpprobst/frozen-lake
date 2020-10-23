@@ -11,5 +11,5 @@ class RandomAgent():
     def __init__(self):
         self.ass = 0
 
-    def SuggestMove(self, env):
+    def SuggestMove(self, env, terminalStates=[]):
         return env.action_space.sample()
