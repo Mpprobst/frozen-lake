@@ -40,11 +40,12 @@ class DeepQNetwork(nn.Module):
 class NeuralNetAgent:
     def __init__(self, env, terminalStates):
         self.terminalStates = terminalStates
+        self.n_states = env.observation_space.n
         self.memorySize = 1000000
         self.memoryCounter = 0
         self.batchSize = 64
-        inputDims = [4]
-        self.qEval = DeepQNetwork(inputDims, 4, 4, env)
+        inputDims = [16]
+        self.qEval = DeepQNetwork(inputDims, 16, 16, env)
         self.stateMemory = np.zeros((self.memorySize, *inputDims), dtype=np.float32)
         self.nextStateMemory = np.zeros((self.memorySize, *inputDims), dtype=np.float32)
         self.actionMemory = np.zeros(self.memorySize, dtype=np.int32)
@@ -62,7 +63,9 @@ class NeuralNetAgent:
         self.memoryCounter += 1
 
     def GetBestAction(self, state):
-        s = T.tensor([state,state,state,state]).to(self.qEval.device).float()
+        oneHot = np.zeros(self.n_states, dtype=np.float32)
+        oneHot[state] = 1.0
+        s = T.tensor(oneHot).to(self.qEval.device).float()
         actions = self.qEval.Forward(s)
         action = T.argmax(actions).item()
         return action

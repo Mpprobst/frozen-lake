@@ -108,12 +108,14 @@ def FrozenLake(agent, size, numEps, sess=None):
                 print(f'TEST {i / TEST_INDEX}:\t Avg Reward = {meanReward} successCount = {agent.successCount} train time = {time.time() - testTime}')
                 testTime = time.time()
                 row = []
+                """
                 for i in range(len(agent.rewardModel)):
                     row.append(round(float(np.amax(agent.rewardModel[i])),2))
                     row.append(ACTION_NAMES[np.argmax(agent.rewardModel[i])])
                     if (i+1) % 4 == 0:
                         print(row)
                         row = []
+                """
                 writer.writerow([i / TEST_INDEX, meanReward])
 
             else:       # TRAINING
