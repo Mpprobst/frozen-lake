@@ -21,23 +21,23 @@ Generally, a NN is done by
 """
 
 GAMMA = 0.99
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.1
 
 class Net(nn.Module):
     def __init__(self, inputDims, outputDims):
         super(Net, self).__init__()
         self.outputDims = outputDims
         self.inputDims = inputDims
-        self.fc1 = nn.Linear(self.inputDims, self.inputDims)    #first layer
-        self.fc2 = nn.Linear(self.inputDims, self.inputDims)    #second layer
-        self.fc3 = nn.Linear(self.inputDims, self.outputDims)   #output layer
+        self.fc1 = nn.Linear(self.inputDims, 64)    #first layer
+        self.fc2 = nn.Linear(64, 64)    #second layer
+        self.fc3 = nn.Linear(64, self.outputDims)   #output layer
         self.device = T.device('cpu')
         self.to(self.device)
 
-    "Implements a feed forward network"
+    "Implements a feed forward network. state is a one hot vector indicating current state"
     def Forward(self, state):
-        x = F.relu(self.fc1(state))
-        x = F.relu(self.fc2(x))
+        x = F.logsigmoid(self.fc1(state))
+        x = F.logsigmoid(self.fc2(x))
         actions = self.fc3(x)
         return actions
 
@@ -48,17 +48,19 @@ class NeuralNetAgent:
         self.n_actions = env.action_space.n
         self.memorySize = 1000000
         self.memoryCounter = 0
-        self.batchSize = 64
         self.net = Net(self.n_states, self.n_actions)
-        self.optimizer = optim.SGD(self.net.parameters(), lr=LEARNING_RATE)
+        self.optimizer = optim.Adam(self.net.parameters(), lr=LEARNING_RATE)
         self.successCount = 0
         self.qTable = np.zeros([self.n_states, env.action_space.n])
 
-    def GetBestAction(self, state):
+    def GetStateTensor(self, state):
         oneHot = np.zeros(self.n_states, dtype=np.float32)
         oneHot[state] = 1.0
-        s = T.tensor(oneHot).to(self.net.device).float()
-        actions = self.net.Forward(s)
+        return T.tensor(oneHot).to(self.net.device).float()
+
+    def GetBestAction(self, state):
+        stateTensor = self.GetStateTensor(state)
+        actions = self.net.Forward(stateTensor)
         self.recentQs = actions
 
         action = actions[T.argmax(actions).item()].item()
@@ -88,27 +90,26 @@ class NeuralNetAgent:
             self.qTable[state][i] = self.recentQs[i]
 
         #backprop
-        nextBestAction = self.GetBestAction(nextState)
+        predict = T.zeros(self.n_actions, device=self.net.device)
+        stateTensor = self.GetStateTensor(state)
+        predict[action] = self.net.Forward(stateTensor)[action]
+
         target = T.zeros(self.n_actions, device=self.net.device)
-        target[action] = reward + GAMMA * self.qTable[nextState][nextBestAction]
+        nextBestAction = self.GetBestAction(nextState)
+        nextStateTensor = self.GetStateTensor(nextState)
+        target[nextBestAction] = reward + GAMMA * self.net.Forward(nextStateTensor)[nextBestAction]
 
         if nextState in self.terminalStates:
-            target[action] = reward
+            target[nextBestAction] = reward
 
-        predict = T.zeros(self.n_actions, device=self.net.device)
-        predict[action] = self.qTable[state][action]
-
-        self.net.zero_grad()
+        #self.net.zero_grad()
         self.optimizer.zero_grad()
         # consider making the loss function an array size 4 with all 0's except for the index of taken action
         #loss = T.zeros((self.n_actions), device=self.net.device, requires_grad=True)
         #loss[action] = 0.5 * (target - predict)**2
-        loss = F.smooth_l1_loss(predict, target)
-
-        self.qTable[state][action] = loss.item()
-
-        loss.requires_grad = True
-
+        loss = F.mse_loss(predict, target)
+        #loss.requires_grad=True
         loss.backward()
-
         self.optimizer.step()
+        for w in self.net.fc1.weight.data:
+            print(w)
