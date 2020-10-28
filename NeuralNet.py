@@ -21,7 +21,8 @@ Generally, a NN is done by
 """
 
 GAMMA = 0.99
-LEARNING_RATE = 0.1
+LEARNING_RATE = 0.4
+BUFFER_SIZE = 10000
 
 class Net(nn.Module):
     def __init__(self, inputDims, outputDims):
@@ -29,7 +30,7 @@ class Net(nn.Module):
         self.outputDims = outputDims
         self.inputDims = inputDims
         self.fc1 = nn.Linear(self.inputDims, 64)    #first layer
-        self.fc2 = nn.Linear(64, 64)    #second layer
+        self.fc2 = nn.Linear(64, 64)                #second layer
         self.fc3 = nn.Linear(64, self.outputDims)   #output layer
         self.device = T.device('cpu')
         self.to(self.device)
@@ -52,6 +53,8 @@ class NeuralNetAgent:
         self.optimizer = optim.Adam(self.net.parameters(), lr=LEARNING_RATE)
         self.successCount = 0
         self.qTable = np.zeros([self.n_states, env.action_space.n])
+        self.experienceReplayBuffer = []
+        self.erbIndex = 0
 
     def GetStateTensor(self, state):
         oneHot = np.zeros(self.n_states, dtype=np.float32)
@@ -86,8 +89,20 @@ class NeuralNetAgent:
         if reward == 1:
             self.successCount += 1
 
+        if len(self.experienceReplayBuffer) < BUFFER_SIZE:
+            self.experienceReplayBuffer.append((state, nextState, action, reward))
+        else:
+            self.experienceReplayBuffer[self.erbIndex] = (state, nextState, action, reward)
+        self.erbIndex += 1
+        if self.erbIndex >= BUFFER_SIZE:
+            self.erbIndex = 0
+
         for i in range(len(self.recentQs)):
             self.qTable[state][i] = self.recentQs[i]
+
+        #print(f'{state},{action},{nextState},{reward}')
+        #state, nextState, action, reward = random.choice(self.experienceReplayBuffer)
+        #print(f'{state},{action},{nextState},{reward}')
 
         #backprop
         predict = T.zeros(self.n_actions, device=self.net.device)
@@ -111,5 +126,5 @@ class NeuralNetAgent:
         #loss.requires_grad=True
         loss.backward()
         self.optimizer.step()
-        for w in self.net.fc1.weight.data:
-            print(w)
+        #for w in self.net.fc1.weight:
+        #    print(w)

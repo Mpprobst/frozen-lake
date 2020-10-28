@@ -80,12 +80,13 @@ class DynaQAgent:
         self.qTable[state][action] = self.qTable[state][action] + LEARNING_RATE * (target - self.qTable[state][action])
 
         # add to history array
-        if self.historyCounter >= MAX_HISTORY_SIZE:
-            self.historyCounter += 1
         if len(self.history) < MAX_HISTORY_SIZE:
             self.history.append((state, action, nextState))
         else:
             self.history[self.historyCounter] = (state, action, nextState)
+        if self.historyCounter >= MAX_HISTORY_SIZE:
+            self.historyCounter = 0
+        self.historyCounter += 1
 
         # update transition model with MLE
         successfulActionCount = 0
