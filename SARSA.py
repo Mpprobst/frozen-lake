@@ -13,20 +13,20 @@ class SARSAAgent:
     def __init__(self, env, terminalStates):
         self.terminalStates = terminalStates
         "The reward model contains the reward for every state"
-        self.rewardModel = []           # [S, A] = R
+        self.qTable = []           # [S, A] = R
         for s in range(env.observation_space.n):
             row = []
             for a in range(env.action_space.n):
                 row.append(0)
-            self.rewardModel.append(row)
+            self.qTable.append(row)
 
         self.successCount = 0
         self.previousObservation = None
 
     def GetBestAction(self, state):
-        actions = self.rewardModel[state]
+        actions = self.qTable[state]
         bestAction = np.argmax(actions)
-        bestReward = self.rewardModel[state][bestAction]
+        bestReward = self.qTable[state][bestAction]
         "need to see if other actions have the same reward"
         options = []
         for i in range(len(actions)):
@@ -54,8 +54,8 @@ class SARSAAgent:
         if self.previousObservation != None:
             # q update equation
             s, a = self.previousObservation
-            target = reward + GAMMA * self.rewardModel[state][action]
+            target = reward + GAMMA * self.qTable[state][action]
             if nextState in self.terminalStates:
                 target = reward
-            self.rewardModel[s][a] = self.rewardModel[s][a] + LEARNING_RATE * (target - self.rewardModel[s][a])
+            self.qTable[s][a] = self.qTable[s][a] + LEARNING_RATE * (target - self.qTable[s][a])
         self.previousObservation = (state, action)

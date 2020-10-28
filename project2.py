@@ -25,7 +25,7 @@ LAKE_SIZES = {'4x4' : '',
               '8x8' : '8x8',
               '8X8' : '8x8' }
 
-ACTION_NAMES = [ 'LEFT', 'DOWN', 'RIGHT', 'UP' ]
+ACTION_NAMES = [ 'LEFT ', 'DOWN ', 'RIGHT', '_UP_ ' ]
 
 TERMINAL_STATES_4 = [5, 7, 11, 12, 15]
 TERMINAL_STATES_8 = [19, 29, 35, 41, 42, 46, 49, 52, 54, 59, 63]
@@ -96,7 +96,7 @@ def FrozenLake(agent, size, numEps, sess=None):
             if i % TEST_INDEX == 0:     # TESTING
                 #print(f'TEST {i / TEST_INDEX}')
                 meanReward = 0
-                #for row in agent.rewardModel:
+                #for row in agent.qTable:
                 #    print(row)
                 #env.render()
 
@@ -105,17 +105,18 @@ def FrozenLake(agent, size, numEps, sess=None):
                     value = Run(agent, env, True)
                     meanReward += value
                 meanReward /= NUM_TESTS
+                "sould I be doing a cumulative reward?"
                 print(f'TEST {i / TEST_INDEX}:\t Avg Reward = {meanReward} successCount = {agent.successCount} train time = {time.time() - testTime}')
                 testTime = time.time()
                 row = []
-                """
-                for i in range(len(agent.rewardModel)):
-                    row.append(round(float(np.amax(agent.rewardModel[i])),2))
-                    row.append(ACTION_NAMES[np.argmax(agent.rewardModel[i])])
+
+                for i in range(len(agent.qTable)):
+                    row.append(round(float(np.amax(agent.qTable[i])),4))
+                    row.append(ACTION_NAMES[np.argmax(agent.qTable[i])])
                     if (i+1) % 4 == 0:
                         print(row)
                         row = []
-                """
+
                 writer.writerow([i / TEST_INDEX, meanReward])
 
             else:       # TRAINING

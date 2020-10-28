@@ -19,19 +19,19 @@ GAMMA = 0.9
 class QLearningAgent:
     def __init__(self, env, terminalStates=[]):
         "The reward model contains the reward for every state"
-        self.rewardModel = []           # [S, A] = R
+        self.qTable = []           # [S, A] = R
         for s in range(env.observation_space.n):
             row = []
             for a in range(env.action_space.n):
                 row.append(0)
-            self.rewardModel.append(row)
+            self.qTable.append(row)
 
         self.successCount = 0
 
     def GetBestAction(self, state):
-        actions = self.rewardModel[state]
+        actions = self.qTable[state]
         bestAction = np.argmax(actions)
-        bestReward = self.rewardModel[state][bestAction]
+        bestReward = self.qTable[state][bestAction]
         "need to see if other actions have the same reward"
         options = []
         for i in range(len(actions)):
@@ -59,4 +59,4 @@ class QLearningAgent:
 
         nextBestAction = self.GetBestAction(nextState)
         # q update equation
-        self.rewardModel[state][action] = self.rewardModel[state][action] + LEARNING_RATE * (reward + GAMMA * self.rewardModel[nextState][nextBestAction] - self.rewardModel[state][action])
+        self.qTable[state][action] = self.qTable[state][action] + LEARNING_RATE * (reward + GAMMA * self.qTable[nextState][nextBestAction] - self.qTable[state][action])
