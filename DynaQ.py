@@ -14,9 +14,9 @@ TEST 42.0:	 Avg Reward = 0.8 successCount = 5898 train time = 31.5400812625885
 import numpy as np
 import random
 
-LEARNING_RATE = 0.001
-GAMMA = 0.99
-MAX_HISTORY_SIZE = 10000
+LEARNING_RATE = 0.0001
+GAMMA = 0.98
+MAX_HISTORY_SIZE = 1000
 
 "uses q-planning and q-learing"
 class DynaQAgent:
@@ -53,7 +53,7 @@ class DynaQAgent:
     def EpsilonGreedy(self, env, state):
         #epsilon = (1 / np.exp(0.001 * self.successCount)) + 0.01    # approximately 0 around successCount = 7,600 and e < 0.1 around 2,300
         # explore
-        if random.random() < 0.1:#self.epsilon:
+        if random.random() < self.epsilon:
             return env.action_space.sample()
 
         # exploit - get best action based on the state
@@ -84,9 +84,11 @@ class DynaQAgent:
             self.history.append((state, action, nextState))
         else:
             self.history[self.historyCounter] = (state, action, nextState)
+
+        self.historyCounter += 1
         if self.historyCounter >= MAX_HISTORY_SIZE:
             self.historyCounter = 0
-        self.historyCounter += 1
+        #print(f'hc={self.historyCounter} len={len(self.history)}')
 
         # update transition model with MLE
         successfulActionCount = 0
@@ -99,10 +101,12 @@ class DynaQAgent:
         self.transitionModel[state][action][nextState] = successfulActionCount / actionTakenCount
 
         limitedHistory = list(dict.fromkeys(self.history))
+        #print(f'lh={len(limitedHistory)}')
         # q planning
         "for n times"
-        for n in range(10):
-            state, action, nextState = random.choice(limitedHistory)
+        for n in range(5):
+            state, action, nextState = random.choice(self.history)
+            # we dont make an action if we are in a terminal state so skip this iteration
             if state in self.terminalStates:
                 continue
 

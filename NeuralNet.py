@@ -101,7 +101,7 @@ class NeuralNetAgent:
             self.qTable[state][i] = self.recentQs[i]
 
         #print(f'{state},{action},{nextState},{reward}')
-        #state, nextState, action, reward = random.choice(self.experienceReplayBuffer)
+        state, nextState, action, reward = random.choice(self.experienceReplayBuffer)
         #print(f'{state},{action},{nextState},{reward}')
 
         #backprop
@@ -117,13 +117,9 @@ class NeuralNetAgent:
         if nextState in self.terminalStates:
             target[nextBestAction] = reward
 
-        #self.net.zero_grad()
+        self.net.zero_grad()
         self.optimizer.zero_grad()
-        # consider making the loss function an array size 4 with all 0's except for the index of taken action
-        #loss = T.zeros((self.n_actions), device=self.net.device, requires_grad=True)
-        #loss[action] = 0.5 * (target - predict)**2
         loss = F.mse_loss(predict, target)
-        #loss.requires_grad=True
         loss.backward()
         self.optimizer.step()
         #for w in self.net.fc1.weight:
