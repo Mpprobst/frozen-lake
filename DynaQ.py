@@ -14,9 +14,9 @@ TEST 42.0:	 Avg Reward = 0.8 successCount = 5898 train time = 31.5400812625885
 import numpy as np
 import random
 
-LEARNING_RATE = 0.0001
-GAMMA = 0.98
-MAX_HISTORY_SIZE = 1000
+LEARNING_RATE = 0.001
+GAMMA = 0.99
+MAX_HISTORY_SIZE = 5000
 
 "uses q-planning and q-learing"
 class DynaQAgent:
@@ -66,7 +66,7 @@ class DynaQAgent:
     def UpdateModels(self, state, nextState, action, reward):
         if reward == 1:
             self.successCount += 1
-            self.epsilon -= 0.0005
+            self.epsilon -= 0.001
             if self.epsilon < 0.01:
                 self.epsilon = 0.01
 
@@ -104,8 +104,8 @@ class DynaQAgent:
         #print(f'lh={len(limitedHistory)}')
         # q planning
         "for n times"
-        for n in range(5):
-            state, action, nextState = random.choice(self.history)
+        for n in range(10):
+            state, action, nextState = random.choice(limitedHistory)
             # we dont make an action if we are in a terminal state so skip this iteration
             if state in self.terminalStates:
                 continue

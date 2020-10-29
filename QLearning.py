@@ -6,7 +6,7 @@ Purpose: Implements the q-learning model-free RL technique to solve the frozen l
 import numpy as np
 import random
 
-LEARNING_RATE = 0.5
+LEARNING_RATE = 0.15
 GAMMA = 0.9
 
 """
@@ -18,21 +18,16 @@ GAMMA = 0.9
 
 class QLearningAgent:
     def __init__(self, env, terminalStates=[]):
-        "The reward model contains the reward for every state"
-        self.qTable = []           # [S, A] = R
-        for s in range(env.observation_space.n):
-            row = []
-            for a in range(env.action_space.n):
-                row.append(0)
-            self.qTable.append(row)
-
+        self.terminalStates = terminalStates
+        "The qTable contains the reward for every state"
+        self.qTable = np.zeros((env.observation_space.n, env.action_space.n), dtype=np.float32)           # [S, A] = R
         self.successCount = 0
 
     def GetBestAction(self, state):
         actions = self.qTable[state]
         bestAction = np.argmax(actions)
         bestReward = self.qTable[state][bestAction]
-        "need to see if other actions have the same reward"
+        "break ties randomly if ties exist"
         options = []
         for i in range(len(actions)):
             if actions[i] == bestReward:

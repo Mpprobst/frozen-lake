@@ -6,19 +6,14 @@ Purpose: Implements the SARSA model-free RL technique to solve the frozen lake p
 import numpy as np
 import random
 
-LEARNING_RATE = 0.1
+LEARNING_RATE = 0.4
 GAMMA = 0.9
 
 class SARSAAgent:
     def __init__(self, env, terminalStates):
         self.terminalStates = terminalStates
         "The reward model contains the reward for every state"
-        self.qTable = []           # [S, A] = R
-        for s in range(env.observation_space.n):
-            row = []
-            for a in range(env.action_space.n):
-                row.append(0)
-            self.qTable.append(row)
+        self.qTable = np.zeros((env.observation_space.n, env.action_space.n), dtype=np.float32)          # [S, A] = R
 
         self.successCount = 0
         self.previousObservation = None
@@ -27,7 +22,7 @@ class SARSAAgent:
         actions = self.qTable[state]
         bestAction = np.argmax(actions)
         bestReward = self.qTable[state][bestAction]
-        "need to see if other actions have the same reward"
+        "break ties randomly if ties exist"
         options = []
         for i in range(len(actions)):
             if actions[i] == bestReward:

@@ -11,14 +11,14 @@ from RandomAgent import RandomAgent
 from DynaQ import DynaQAgent
 from QLearning import QLearningAgent
 from SARSA import SARSAAgent
-from NeuralNet import NeuralNetAgent
+#from NeuralNet import NeuralNetAgent
 import time
 
 AGENTS_MAP = {'random' : RandomAgent,
                'dynaQ' : DynaQAgent,
                'qLearn': QLearningAgent,
-               'SARSA': SARSAAgent,
-               'NN' : NeuralNetAgent  }
+               'SARSA': SARSAAgent}#,
+               #'NN' : NeuralNetAgent  }
 
 LAKE_SIZES = {'4x4' : '',
               '4X4' : '',
@@ -63,7 +63,7 @@ def Run(agent, env, isTest):
 
 
         currentState = nextState
-    return reward
+    return (reward, currentState)
     #endwhile
 
 """
@@ -96,17 +96,27 @@ def FrozenLake(agent, size, numEps, sess=None):
             if i % TEST_INDEX == 0:     # TESTING
                 #print(f'TEST {i / TEST_INDEX}')
                 meanReward = 0
+                numDeaths = 0
+                numDNF = 0
+                numWins = 0
                 #for row in agent.qTable:
                 #    print(row)
                 #env.render()
 
                 for t in range(NUM_TESTS):
                     #print(f'-----{t}-----\n')
-                    value = Run(agent, env, True)
+                    value, state = Run(agent, env, True)
                     meanReward += value
+                    if state in agent.terminalStates:
+                        if value == 0:
+                            numDeaths += 1
+                        else:
+                            numWins += 1
+                    elif value == 0:
+                        numDNF  += 1
                 meanReward /= NUM_TESTS
                 "sould I be doing a cumulative reward?"
-                print(f'TEST {i / TEST_INDEX}:\t Avg Reward = {meanReward} successCount = {agent.successCount} train time = {time.time() - testTime}')
+                print(f'TEST {i / TEST_INDEX}:\t Avg Reward = {meanReward} successCount = {agent.successCount} deaths = {numDeaths} wins = {numWins} DNF = {numDNF}')
                 testTime = time.time()
                 row = []
 

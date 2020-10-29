@@ -67,6 +67,7 @@ class NeuralNetAgent:
         self.recentQs = actions
 
         action = actions[T.argmax(actions).item()].item()
+        "break ties randomly if ties exist"
         options = []
         for i in range(len(actions)):
             if actions[i].item() == action:
