@@ -20,8 +20,28 @@ Generally, a NN is done by
 3. Backprop and update weights of the NN
 """
 
-GAMMA = 0.99
-LEARNING_RATE = 0.4
+"""
+TEST 99.0:	 Avg Reward = 0.0 successCount = 207 train time = 235.1845030784607
+[0.0031, 'LEFT ', 0.003, 'LEFT ', 0.1481, 'DOWN ', 0.0, 'RIGHT']
+[0.0, 'RIGHT', -0.0, '_UP_ ', 0.0, 'LEFT ', 0.1632, 'LEFT ']
+[0.2813, 'DOWN ', 0.0, 'RIGHT', 0.1835, 'DOWN ', 0.0019, 'LEFT ']
+[0.9533, 'DOWN ', 0.0145, 'LEFT ', 0.0376, 'LEFT ', 0.0, '_UP_ ']
+[0.0002, '_UP_ ', 0.0, 'RIGHT', 0.1242, 'DOWN ', 0.0, 'LEFT ']
+[0.5349, 'DOWN ', 0.5358, 'DOWN ', 0.0, 'DOWN ', 0.0, 'RIGHT']
+[0.1735, 'LEFT ', 0.0001, 'DOWN ', -0.0, 'RIGHT', 0.0, '_UP_ ']
+[0.0, 'RIGHT', 0.0, 'LEFT ', 0.0, 'DOWN ', -0.0, '_UP_ ']
+[0.0002, 'DOWN ', 0.0002, 'DOWN ', 0.0002, 'DOWN ', 0.0, 'LEFT ']
+[0.3968, 'LEFT ', 0.0183, 'DOWN ', 0.6354, '_UP_ ', 0.0, '_UP_ ']
+[0.0, 'RIGHT', 0.0, 'LEFT ', 0.0, 'LEFT ', 0.0, 'LEFT ']
+[0.352, 'LEFT ', 0.0001, 'RIGHT', 0.0, 'LEFT ', 0.1894, 'RIGHT']
+[0.0, 'RIGHT', 0.0, 'LEFT ', -0.0, 'RIGHT', 0.0012, 'DOWN ']
+[0.0, 'LEFT ', 0.0, 'RIGHT', 0.0, 'LEFT ', 0.8088, 'RIGHT']
+[0.0, 'RIGHT', 0.0198, 'DOWN ', -0.0, 'RIGHT', 0.0, 'LEFT ']
+[0.0002, 'RIGHT', 0.0, 'RIGHT', 0.0, 'DOWN ', 0.0, 'LEFT ']
+"""
+
+GAMMA = 0.95
+LEARNING_RATE = 0.01
 BUFFER_SIZE = 10000
 
 class Net(nn.Module):
@@ -29,17 +49,17 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.outputDims = outputDims
         self.inputDims = inputDims
-        self.fc1 = nn.Linear(self.inputDims, 64)    #first layer
-        self.fc2 = nn.Linear(64, 64)                #second layer
-        self.fc3 = nn.Linear(64, self.outputDims)   #output layer
+        self.fc1 = nn.Linear(self.inputDims, 32)    #first layer
+        self.fc2 = nn.Linear(32, self.outputDims)                #second layer
+        #self.fc3 = nn.Linear(16, self.outputDims)   #output layer
         self.device = T.device('cpu')
         self.to(self.device)
 
     "Implements a feed forward network. state is a one hot vector indicating current state"
     def Forward(self, state):
         x = F.logsigmoid(self.fc1(state))
-        x = F.logsigmoid(self.fc2(x))
-        actions = self.fc3(x)
+        #x = F.logsigmoid(self.fc2(x))
+        actions = self.fc2(x)
         return actions
 
 class NeuralNetAgent:
@@ -47,14 +67,13 @@ class NeuralNetAgent:
         self.terminalStates = terminalStates
         self.n_states = env.observation_space.n
         self.n_actions = env.action_space.n
-        self.memorySize = 1000000
-        self.memoryCounter = 0
         self.net = Net(self.n_states, self.n_actions)
         self.optimizer = optim.Adam(self.net.parameters(), lr=LEARNING_RATE)
         self.successCount = 0
         self.qTable = np.zeros([self.n_states, env.action_space.n])
         self.experienceReplayBuffer = []
         self.erbIndex = 0
+        self.epsilon = 1
 
     def GetStateTensor(self, state):
         oneHot = np.zeros(self.n_states, dtype=np.float32)
@@ -74,9 +93,9 @@ class NeuralNetAgent:
         return random.choice(options)
 
     def EpsilonGreedy(self, env, state):
-        epsilon = (0.5 / np.exp(0.01 * self.successCount))      # approximately .1 around successCount = 25,000 and e < 0.2 around 6000 This is because I am running 50,000 episodes and the model should be be able to have won half of the time by the end of training
+        #epsilon = (1 / np.exp(0.01 * self.successCount)) + 0.01      # e = 0 after 760 successes
         # explore
-        if random.random() < epsilon:
+        if random.random() < self.epsilon:
             return env.action_space.sample()
 
         # exploit - get best action based on the state
@@ -88,7 +107,13 @@ class NeuralNetAgent:
     def UpdateModels(self, state, nextState, action, reward):
         if reward == 1:
             self.successCount += 1
+            self.epsilon -= 0.002
+            if self.epsilon < 0.01:
+                self.epsilon = 0.01
+        for n in range(1):
+            self.Train(state, nextState, action, reward)
 
+    def Train(self, state, nextState, action, reward):
         if len(self.experienceReplayBuffer) < BUFFER_SIZE:
             self.experienceReplayBuffer.append((state, nextState, action, reward))
         else:
@@ -101,7 +126,7 @@ class NeuralNetAgent:
             self.qTable[state][i] = self.recentQs[i]
 
         #print(f'{state},{action},{nextState},{reward}')
-        state, nextState, action, reward = random.choice(self.experienceReplayBuffer)
+        #state, nextState, action, reward = random.choice(self.experienceReplayBuffer)
         #print(f'{state},{action},{nextState},{reward}')
 
         #backprop
@@ -117,10 +142,9 @@ class NeuralNetAgent:
         if nextState in self.terminalStates:
             target[nextBestAction] = reward
 
-        self.net.zero_grad()
-        self.optimizer.zero_grad()
         loss = F.mse_loss(predict, target)
-        loss.backward()
+        self.optimizer.zero_grad()
+        loss.backward(retain_graph=True)
         self.optimizer.step()
         #for w in self.net.fc1.weight:
         #    print(w)
