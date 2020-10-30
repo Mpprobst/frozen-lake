@@ -17,8 +17,8 @@ import time
 AGENTS_MAP = {'random' : RandomAgent,
                'dynaQ' : DynaQAgent,
                'qLearn': QLearningAgent,
-               'SARSA': SARSAAgent}#,
-               #'NN' : NeuralNetAgent  }
+               'SARSA': SARSAAgent,
+               'NN' : NeuralNetAgent  }
 
 LAKE_SIZES = {'4x4' : '',
               '4X4' : '',
