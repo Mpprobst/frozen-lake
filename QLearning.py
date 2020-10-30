@@ -6,15 +6,8 @@ Purpose: Implements the q-learning model-free RL technique to solve the frozen l
 import numpy as np
 import random
 
-LEARNING_RATE = 0.15
+LEARNING_RATE = 0.1
 GAMMA = 0.9
-
-"""
-['LEFT', 'UP', 'DOWN', 'UP']
-['LEFT', 'LEFT', 'LEFT', 'LEFT']
-['UP', 'DOWN', 'LEFT', 'LEFT']
-['LEFT', 'RIGHT', 'UP', 'LEFT']
-"""
 
 class QLearningAgent:
     def __init__(self, env, terminalStates=[]):
@@ -26,7 +19,6 @@ class QLearningAgent:
         actions = self.qTable[state]
         bestAction = np.argmax(actions)
         bestReward = self.qTable[state][bestAction]
-
         #break ties randomly if ties exist
         options = []
         for i in range(len(actions)):
@@ -36,12 +28,12 @@ class QLearningAgent:
         return bestAction
 
     def EpsilonGreedy(self, env, state):
-        epsilon = (0.5 / np.exp(0.01 * self.successCount))      # approximately 0 around successCount = 600
+        epsilon = (0.5 / np.exp(0.01 * self.successCount))      # approximately 0 around successCount = 600 and e < 0.1 around 50
         # explore
         if random.random() < epsilon:
             return env.action_space.sample()
 
-        # exploit
+        # exploit - get best action based on the state
         return self.GetBestAction(state)
 
     def SuggestMove(self, env, state):

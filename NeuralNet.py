@@ -2,8 +2,6 @@
 NeuralNet.py
 Author: Michael Probst
 Purpose: Implements the Q-Learning model-free RL technique using a neural network to solve the frozen lake problem
-Reference: https://www.youtube.com/watch?v=wc-FxNENg9U&feature=youtu.be
-https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
 """
 import gym
 import numpy as np
@@ -13,36 +11,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-"""
-Generally, a NN is done by
-1. Input to NN
-2. Calculate output and feed forward (forward() method)
-3. Backprop and update weights of the NN
-"""
-
-"""
- TEST 99.0:	 Avg Reward = 0.0 successCount = 207 train time = 235.1845030784607
-[0.0031, 'LEFT ', 0.003, 'LEFT ', 0.1481, 'DOWN ', 0.0, 'RIGHT']
-[0.0, 'RIGHT', -0.0, '_UP_ ', 0.0, 'LEFT ', 0.1632, 'LEFT ']
-[0.2813, 'DOWN ', 0.0, 'RIGHT', 0.1835, 'DOWN ', 0.0019, 'LEFT ']
-[0.9533, 'DOWN ', 0.0145, 'LEFT ', 0.0376, 'LEFT ', 0.0, '_UP_ ']
-[0.0002, '_UP_ ', 0.0, 'RIGHT', 0.1242, 'DOWN ', 0.0, 'LEFT ']
-[0.5349, 'DOWN ', 0.5358, 'DOWN ', 0.0, 'DOWN ', 0.0, 'RIGHT']
-[0.1735, 'LEFT ', 0.0001, 'DOWN ', -0.0, 'RIGHT', 0.0, '_UP_ ']
-[0.0, 'RIGHT', 0.0, 'LEFT ', 0.0, 'DOWN ', -0.0, '_UP_ ']
-[0.0002, 'DOWN ', 0.0002, 'DOWN ', 0.0002, 'DOWN ', 0.0, 'LEFT ']
-[0.3968, 'LEFT ', 0.0183, 'DOWN ', 0.6354, '_UP_ ', 0.0, '_UP_ ']
-[0.0, 'RIGHT', 0.0, 'LEFT ', 0.0, 'LEFT ', 0.0, 'LEFT ']
-[0.352, 'LEFT ', 0.0001, 'RIGHT', 0.0, 'LEFT ', 0.1894, 'RIGHT']
-[0.0, 'RIGHT', 0.0, 'LEFT ', -0.0, 'RIGHT', 0.0012, 'DOWN ']
-[0.0, 'LEFT ', 0.0, 'RIGHT', 0.0, 'LEFT ', 0.8088, 'RIGHT']
-[0.0, 'RIGHT', 0.0198, 'DOWN ', -0.0, 'RIGHT', 0.0, 'LEFT ']
-[0.0002, 'RIGHT', 0.0, 'RIGHT', 0.0, 'DOWN ', 0.0, 'LEFT ']
-"""
-
 GAMMA = 0.98
 LEARNING_RATE = 0.3
-BUFFER_SIZE = 10000
 
 class Net(nn.Module):
     def __init__(self, inputDims, outputDims):
@@ -55,7 +25,7 @@ class Net(nn.Module):
         self.device = T.device('cpu')
         self.to(self.device)
 
-    "Implements a feed forward network. state is a one hot vector indicating current state"
+    #Implements a feed forward network. state is a one hot vector indicating current state
     def Forward(self, state):
         x = F.logsigmoid(self.fc1(state))
         x = F.logsigmoid(self.fc2(x))
@@ -64,16 +34,14 @@ class Net(nn.Module):
 
 class NeuralNetAgent:
     def __init__(self, env, terminalStates):
+        self.epsilon = 1
         self.terminalStates = terminalStates
         self.n_states = env.observation_space.n
         self.n_actions = env.action_space.n
         self.net = Net(self.n_states, self.n_actions)
         self.optimizer = optim.Adam(self.net.parameters(), lr=LEARNING_RATE)
+        self.qTable = np.zeros([self.n_states, env.action_space.n])     # for the NN, this is for debugging only
         self.successCount = 0
-        self.qTable = np.zeros([self.n_states, env.action_space.n])     # used for debugging
-        self.experienceReplayBuffer = []
-        self.erbIndex = 0
-        self.epsilon = 1
 
     def GetStateTensor(self, state):
         oneHot = np.zeros(self.n_states, dtype=np.float32)
@@ -93,12 +61,11 @@ class NeuralNetAgent:
         return random.choice(options)
 
     def EpsilonGreedy(self, env, state):
-        #epsilon = (1 / np.exp(0.01 * self.successCount)) + 0.01      # e = 0 after 760 successes
         # explore
         if random.random() < self.epsilon:
             return env.action_space.sample()
 
-        # exploit - get best action based on the state
+        # exploit
         return self.GetBestAction(state)
 
     def SuggestMove(self, env, state):
@@ -114,20 +81,9 @@ class NeuralNetAgent:
             self.Train(state, nextState, action, reward)
 
     def Train(self, state, nextState, action, reward):
-        if len(self.experienceReplayBuffer) < BUFFER_SIZE:
-            self.experienceReplayBuffer.append((state, nextState, action, reward))
-        else:
-            self.experienceReplayBuffer[self.erbIndex] = (state, nextState, action, reward)
-        self.erbIndex += 1
-        if self.erbIndex >= BUFFER_SIZE:
-            self.erbIndex = 0
-
+        # updates a qTable with previously calculated Q values from the NN. Used for debug only.
         for i in range(len(self.recentQs)):
             self.qTable[state][i] = self.recentQs[i]
-
-        #print(f'{state},{action},{nextState},{reward}')
-        #state, nextState, action, reward = random.choice(self.experienceReplayBuffer)
-        #print(f'{state},{action},{nextState},{reward}')
 
         #backprop
         predict = T.zeros(self.n_actions, device=self.net.device)
@@ -146,5 +102,3 @@ class NeuralNetAgent:
         self.optimizer.zero_grad()
         loss.backward(retain_graph=True)
         self.optimizer.step()
-        #for w in self.net.fc1.weight:
-        #    print(w)
