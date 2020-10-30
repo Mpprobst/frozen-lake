@@ -30,7 +30,7 @@ class SARSAAgent:
         return bestAction
 
     def EpsilonGreedy(self, env, state):
-        epsilon = (1 / np.exp(0.01 * self.successCount))      # approximately 0 around successCount = 760 
+        epsilon = (1 / np.exp(0.01 * self.successCount))      # approximately 0 around successCount = 760
         # explore
         if random.random() < epsilon:
             return env.action_space.sample()
