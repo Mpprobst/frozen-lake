@@ -12,17 +12,16 @@ GAMMA = 0.9
 class SARSAAgent:
     def __init__(self, env, terminalStates):
         self.terminalStates = terminalStates
-        "The reward model contains the reward for every state"
         self.qTable = np.zeros((env.observation_space.n, env.action_space.n), dtype=np.float32)          # [S, A] = R
-
-        self.successCount = 0
         self.previousObservation = None
+        self.successCount = 0
 
     def GetBestAction(self, state):
         actions = self.qTable[state]
         bestAction = np.argmax(actions)
         bestReward = self.qTable[state][bestAction]
-        "break ties randomly if ties exist"
+
+        #break ties randomly if ties exist
         options = []
         for i in range(len(actions)):
             if actions[i] == bestReward:
@@ -31,12 +30,12 @@ class SARSAAgent:
         return bestAction
 
     def EpsilonGreedy(self, env, state):
-        epsilon = (1 / np.exp(0.01 * self.successCount))      # approximately 0 around successCount = 600 and e < 0.1 around 50
+        epsilon = (1 / np.exp(0.01 * self.successCount))      # approximately 0 around successCount = 760 
         # explore
         if random.random() < epsilon:
             return env.action_space.sample()
 
-        # exploit - get best action based on the state
+        # exploit
         return self.GetBestAction(state)
 
     def SuggestMove(self, env, state):

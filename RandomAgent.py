@@ -9,7 +9,7 @@ import random
 
 class RandomAgent():
     def __init__(self):
-        self.ass = 0
+        self.successCount = 0
 
     def SuggestMove(self, env, terminalStates=[]):
         return env.action_space.sample()
