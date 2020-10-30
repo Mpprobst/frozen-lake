@@ -41,7 +41,7 @@ Generally, a NN is done by
 """
 
 GAMMA = 0.98
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.3
 BUFFER_SIZE = 10000
 
 class Net(nn.Module):
@@ -70,7 +70,7 @@ class NeuralNetAgent:
         self.net = Net(self.n_states, self.n_actions)
         self.optimizer = optim.Adam(self.net.parameters(), lr=LEARNING_RATE)
         self.successCount = 0
-        self.qTable = np.zeros([self.n_states, env.action_space.n])
+        self.qTable = np.zeros([self.n_states, env.action_space.n])     # used for debugging
         self.experienceReplayBuffer = []
         self.erbIndex = 0
         self.epsilon = 1
