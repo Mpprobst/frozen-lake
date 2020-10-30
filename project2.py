@@ -12,7 +12,6 @@ from DynaQ import DynaQAgent
 from QLearning import QLearningAgent
 from SARSA import SARSAAgent
 from NeuralNet import NeuralNetAgent
-import time
 
 AGENTS_MAP = {'random' : RandomAgent,
                'dynaQ' : DynaQAgent,
@@ -47,7 +46,6 @@ def Run(agent, env, isTest):
         actionToTake = 0
         if isTest:
             actionToTake = agent.GetBestAction(currentState)
-            #env.render()
         else:
             actionToTake = agent.SuggestMove(env, currentState)
 
@@ -71,7 +69,7 @@ Main loop for solving the frozen lake problem.
 agent is the agent that is currently solving the problem.
 size is the size of the lake.
 """
-def FrozenLake(agent, size, numEps, sess=None):
+def FrozenLake(agent, size, numEps):
     filename = f'results/{agent}_{size}.csv'
     agentFunc = AGENTS_MAP[agent]
     env = gym.make(f'FrozenLake{LAKE_SIZES[size]}-v0')
@@ -81,8 +79,6 @@ def FrozenLake(agent, size, numEps, sess=None):
         terminalStates = TERMINAL_STATES_8
 
     agent = agentFunc(env, terminalStates)
-    if sess != None:
-        agent.sess = sess
 
     with open(filename, 'w', newline = '') as csvfile:
         writer = csv.writer(csvfile, delimiter = ',')
@@ -90,18 +86,10 @@ def FrozenLake(agent, size, numEps, sess=None):
             #Print out the number of actions and states in the environment (disable for cartpole)
             print(env.action_space.n)
             print(env.observation_space.n)
-        testTime = time.time()
         for i in range(numEps):
 
             if i % TEST_INDEX == 0:     # TESTING
-                #print(f'TEST {i / TEST_INDEX}')
                 meanReward = 0
-                numDeaths = 0
-                numDNF = 0
-                numWins = 0
-                #for row in agent.qTable:
-                #    print(row)
-                #env.render()
 
                 for t in range(NUM_TESTS):
                     #print(f'-----{t}-----\n')
@@ -115,18 +103,7 @@ def FrozenLake(agent, size, numEps, sess=None):
                     elif value == 0:
                         numDNF  += 1
                 meanReward /= NUM_TESTS
-                "sould I be doing a cumulative reward?"
-                print(f'TEST {i / TEST_INDEX}:\t Avg Reward = {meanReward} successCount = {agent.successCount} deaths = {numDeaths} wins = {numWins} DNF = {numDNF}')
-                testTime = time.time()
-                row = []
-
-                for i in range(len(agent.qTable)):
-                    row.append(round(float(np.amax(agent.qTable[i])),4))
-                    row.append(ACTION_NAMES[np.argmax(agent.qTable[i])])
-                    if (i+1) % 4 == 0:
-                        print(row)
-                        row = []
-
+                print(f'TEST {i / TEST_INDEX}:\t Avg Reward = {meanReward}')
                 writer.writerow([i / TEST_INDEX, meanReward])
 
             else:       # TRAINING
@@ -135,9 +112,16 @@ def FrozenLake(agent, size, numEps, sess=None):
                 Run(agent, env, False)
 
         #endfor
+                row = []
 
+    # Shows the action selection policy at the end of training
+    if args.verbose:
+        for i in range(len(agent.qTable)):
+            row.append(ACTION_NAMES[np.argmax(agent.qTable[i])])
+            if (i+1) % 4 == 0:
+                print(row)
+                row = []
     env.close()
-
 
 # MAIN
 parser = argparse.ArgumentParser(description='Define the agent to solve the frozen lake problem.')
