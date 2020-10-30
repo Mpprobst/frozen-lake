@@ -11,7 +11,7 @@ from RandomAgent import RandomAgent
 from DynaQ import DynaQAgent
 from QLearning import QLearningAgent
 from SARSA import SARSAAgent
-#from NeuralNet import NeuralNetAgent
+from NeuralNet import NeuralNetAgent
 import time
 
 AGENTS_MAP = {'random' : RandomAgent,

@@ -21,7 +21,7 @@ Generally, a NN is done by
 """
 
 """
-TEST 99.0:	 Avg Reward = 0.0 successCount = 207 train time = 235.1845030784607
+ TEST 99.0:	 Avg Reward = 0.0 successCount = 207 train time = 235.1845030784607
 [0.0031, 'LEFT ', 0.003, 'LEFT ', 0.1481, 'DOWN ', 0.0, 'RIGHT']
 [0.0, 'RIGHT', -0.0, '_UP_ ', 0.0, 'LEFT ', 0.1632, 'LEFT ']
 [0.2813, 'DOWN ', 0.0, 'RIGHT', 0.1835, 'DOWN ', 0.0019, 'LEFT ']
@@ -40,7 +40,7 @@ TEST 99.0:	 Avg Reward = 0.0 successCount = 207 train time = 235.1845030784607
 [0.0002, 'RIGHT', 0.0, 'RIGHT', 0.0, 'DOWN ', 0.0, 'LEFT ']
 """
 
-GAMMA = 0.95
+GAMMA = 0.98
 LEARNING_RATE = 0.01
 BUFFER_SIZE = 10000
 
@@ -50,16 +50,16 @@ class Net(nn.Module):
         self.outputDims = outputDims
         self.inputDims = inputDims
         self.fc1 = nn.Linear(self.inputDims, 32)    #first layer
-        self.fc2 = nn.Linear(32, self.outputDims)                #second layer
-        #self.fc3 = nn.Linear(16, self.outputDims)   #output layer
+        self.fc2 = nn.Linear(32, 16)                #second layer
+        self.fc3 = nn.Linear(16, self.outputDims)   #output layer
         self.device = T.device('cpu')
         self.to(self.device)
 
     "Implements a feed forward network. state is a one hot vector indicating current state"
     def Forward(self, state):
         x = F.logsigmoid(self.fc1(state))
-        #x = F.logsigmoid(self.fc2(x))
-        actions = self.fc2(x)
+        x = F.logsigmoid(self.fc2(x))
+        actions = self.fc3(x)
         return actions
 
 class NeuralNetAgent:
@@ -86,7 +86,6 @@ class NeuralNetAgent:
         self.recentQs = actions
 
         action = actions[T.argmax(actions).item()].item()
-        "break ties randomly if ties exist"
         options = []
         for i in range(len(actions)):
             if actions[i].item() == action:
@@ -111,7 +110,7 @@ class NeuralNetAgent:
             self.epsilon -= 0.002
             if self.epsilon < 0.01:
                 self.epsilon = 0.01
-        for n in range(1):
+        for n in range(5):
             self.Train(state, nextState, action, reward)
 
     def Train(self, state, nextState, action, reward):
