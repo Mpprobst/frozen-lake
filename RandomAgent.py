@@ -1,11 +1,25 @@
-#A sample agent that just takes random actions in whatever environment you choose. I've included the 4x4 version and 8x8 versions of Frozen Lake for you to play around with. I've also put CartPole in there because I think it's neat. If you try to activate cartpole, disable the action and observation space print statements.
+"""
+RandomAgent.py
+Author: Michael Probst
+Purpose: Implements an agent that picks a random agent in the frozen lake environment
+"""
 
 import gym
 import random
+import numpy as np
 
 class RandomAgent():
-    def __init__(self):
-        self.ass = 0
+    def __init__(self, env, terminalStates=[]):
+        self.terminalStates = terminalStates
+        self.qTable = np.zeros((env.observation_space.n, env.action_space.n), dtype=np.float32)     #only necessary to prevent errors while using verbose option
+        self.successCount = 0
 
-    def SuggestMove(self, env):
+    def GetBestAction(self, state):
+        return random.choice([0,1,2,3])
+
+    def SuggestMove(self, env, state):
         return env.action_space.sample()
+
+    # this is defined in other agents, so this must be defined to prevent errors
+    def UpdateModels(self, state, nextState, action, reward):
+        return
